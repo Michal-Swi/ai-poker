@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <utility>
@@ -20,15 +21,113 @@ enum class HandEval {
 
 class Player {
 	private:
+	using color_arr_type = std::array<int, 4>;
+	using values_arr_type = std::array<int, 15>;
+	
+	private:
 	std::unique_ptr<Card> card1, card2;
 	int cash;
 
 	private:
 	HandEval hand_evaluation;
+	int pairs;
+	int streak; // For straight and flush
+	int threes;
+	bool four, same_colour;
 
 	public:
-	void evaluate_hand(std::array<Colors, 4> color_arr, std::array<int, 15> table_vals) {
+	Player() : hand_evaluation(HandEval::Nothing),
+			   pairs(0),
+			   threes(0),
+			   four(false),
+			   same_colour(false),
+			   streak(0)
+	{} 
+
+	private:
+	bool royal_flush(values_arr_type &values_arr) {
+		for (int i = 10; i < values_arr.size(); i++) {
+			if (values_arr.at(i) > 0) {
+				continue;	
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+	public:
+	void evaluate_hand(color_arr_type color_arr, values_arr_type values_arr) {
+		values_arr.at(card1->get_value())++;	
+		values_arr.at(card2->get_value())++;	
+		
+		color_arr.at(static_cast<int>(card1->get_color()))++;
+		color_arr.at(static_cast<int>(card2->get_color()))++;
+		
+		int curr_streak = 0;
+		for (auto &value : values_arr) {
+			if (value >= 1) { 
+				curr_streak++;	
+			} else {
+				curr_streak = 0;
+			}
 			
+			streak = std::max(streak, curr_streak); // Here because flush 
+													// can have ace 
+			switch (value) {
+				case 2:
+					pairs++;
+					break;
+				case 3:
+					threes++;
+					break;
+				case 4:
+					four = true;
+					break;
+			}			
+		}
+
+		for (auto &colour : color_arr) {
+			if (colour >= 5) {
+				same_colour = true;
+				break;
+			}
+		}
+
+		if (pairs == 1) {
+			hand_evaluation = HandEval::OnePair;
+		} else if (pairs == 2) {
+			hand_evaluation = HandEval::TwoPair;
+		}
+		
+		if (threes > 0) {
+			hand_evaluation = HandEval::ThreeOfAKind;
+		}
+
+		if (streak >= 5) {
+			hand_evaluation = HandEval::Straight;
+		}
+
+		if (same_colour) {
+			hand_evaluation = HandEval::Flush;
+		}
+
+		if (threes > 0 and pairs > 0) {
+			hand_evaluation = HandEval::FullHouse;
+		}
+
+		if (four) {
+			hand_evaluation = HandEval::FourOfAKind;
+		}
+
+		if (same_colour and streak >= 5) {
+			hand_evaluation = HandEval::StraightFlush;
+		}
+
+		if (same_colour and streak >= 5 and royal_flush(values_arr)) {
+			hand_evaluation = HandEval::RoyalFlush;
+		}
 	}
 
 	HandEval get_hand_evaluation() {

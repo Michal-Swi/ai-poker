@@ -94,6 +94,7 @@ class Poker {
 		evaluate_table();
 
 		for (auto &player : players) {
+			player->evaluate_hand(colors_array, values_array);
 		}
 	}
 

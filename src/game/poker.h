@@ -59,6 +59,7 @@ class Poker {
 
 	private:
 	std::vector<std::unique_ptr<Player>> players;
+	std::vector<HandEval> player_hand_evaluation;
 
 	private:
 	void create_players(const int &number_of_players) {
@@ -95,6 +96,8 @@ class Poker {
 
 		for (auto &player : players) {
 			player->evaluate_hand(colors_array, values_array);
+			HandEval hand = player->get_hand_evaluation();
+			player_hand_evaluation.push_back(hand);
 		}
 	}
 

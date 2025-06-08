@@ -52,11 +52,9 @@ class Player {
 			return false;
 		}
 
-		if (start == 10 and end == 14) {
+		if (start == 10 and end != 14) {
 			return false;
 		}
-
-		return true;
 	}
 
 	public:
@@ -67,20 +65,17 @@ class Player {
 		color_arr.at(static_cast<int>(card1->get_color()))++;
 		color_arr.at(static_cast<int>(card2->get_color()))++;
 		
-		int curr_streak = 0, curr_start = 0, curr_end = -1;
-		for (int i = 2; i < values_arr.size(); i++) {
-			if (curr_streak == 0 and values_arr[i] > 0) {
-				curr_start = i;
-			}
-
-			if (values_arr[i] > 0) {
-				curr_streak++;
-				curr_end = i;
+		int curr_streak = 0;
+		for (auto &value : values_arr) {
+			if (value >= 1) { 
+				curr_streak++;	
 			} else {
 				curr_streak = 0;
 			}
-
-			switch (values_arr[i]) {
+			
+			streak = std::max(streak, curr_streak); // Here because flush 
+													// can have ace 
+			switch (value) {
 				case 2:
 					pairs++;
 					break;
@@ -90,7 +85,7 @@ class Player {
 				case 4:
 					four = true;
 					break;
-			}
+			}			
 		}
 
 		for (auto &colour : color_arr) {
@@ -99,41 +94,8 @@ class Player {
 				break;
 			}
 		}
+		
 
-		if (pairs == 1) {
-			hand_evaluation = HandEval::OnePair;
-		} else if (pairs == 2) {
-			hand_evaluation = HandEval::TwoPair;
-		}
-
-		if (threes) {
-			hand_evaluation = HandEval::ThreeOfAKind;
-		}
-
-		if (streak >= 5) {
-			hand_evaluation = HandEval::Straight;
-		}
-
-		if (same_colour) {
-			hand_evaluation = HandEval::Flush;
-		}
-
-		if (threes >= 1 and pairs >= 2) {
-			hand_evaluation = HandEval::FullHouse;
-		}
-
-		if (four) {
-			hand_evaluation = HandEval::FourOfAKind;
-		}
-
-		if (streak >= 5 and same_colour) {
-			hand_evaluation = HandEval::StraightFlush;
-		}
-
-		if (streak >= 5 and same_colour 
-			and start == 10 and end == 14) {
-			hand_evaluation = HandEval::RoyalFlush;
-		}
 	}
 
 	HandEval get_hand_evaluation() {

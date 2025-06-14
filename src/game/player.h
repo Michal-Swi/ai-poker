@@ -120,12 +120,17 @@ class Player {
 
 	public:
 	void evaluate_hand(poker_cards_arr poker_cards_arr) {
-		// values_arr.at(card1->get_value())++;	
-		// values_arr.at(card2->get_value())++;	
-		
-		// color_arr.at(static_cast<int>(card1->get_color()))++;
-		// color_arr.at(static_cast<int>(card2->get_color()))++;
-		
+		if (card1 == nullptr) {
+			throw std::runtime_error(CardsWereNotAssigned);
+		}
+
+		if (card2 == nullptr) {
+			throw std::runtime_error(CardsWereNotAssigned);
+		}
+
+		poker_cards_arr.at(static_cast<int>(card1->get_color())).at(card1->get_value()) = true;
+		poker_cards_arr.at(static_cast<int>(card2->get_color())).at(card2->get_value()) = true;
+
 		int curr_streak = 0, curr_start = 0, curr_end = -1;
 		for (int i = 2; i <= 14; i++) {
 			bool exists_flag = card_value_exists(i, poker_cards_arr);

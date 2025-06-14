@@ -36,6 +36,49 @@ class Player {
 	int cash;
 
 	private:
+	bool is_string_clean(const std::string &s) {
+		for (const auto &ch : s) {
+			if (!isdigit(ch)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public:
+	int get_blind_bet() {
+		std::string bet_str;
+		int bet;
+
+		do {
+			std::cout << "You have: " 
+					<< cash 
+					<< " cash avaiable, place your blind bet"
+					<< std::endl;
+			std::cin >> bet_str; 
+
+			if (!is_string_clean(bet_str)) {
+				continue;
+			}
+
+			bet = std::stoi(bet_str);
+		} while(bet > cash);
+
+		return bet;
+	}
+
+	public:
+	int get_cash() {
+		return cash;
+	}
+
+	public:
+	void set_cash(const int &cash) {
+		this->cash = cash;
+	}
+
+	private:
 	HandEval hand_evaluation;
 	int pairs;
 	int streak, start, end; // For straight and flush
@@ -128,8 +171,12 @@ class Player {
 			throw std::runtime_error(CardsWereNotAssigned);
 		}
 
-		poker_cards_arr.at(static_cast<int>(card1->get_color())).at(card1->get_value()) = true;
-		poker_cards_arr.at(static_cast<int>(card2->get_color())).at(card2->get_value()) = true;
+		poker_cards_arr
+			.at(static_cast<int>(card1->get_color()))
+			.at(card1->get_value()) = true;
+		poker_cards_arr
+			.at(static_cast<int>(card2->get_color()))
+			.at(card2->get_value()) = true;
 
 		int curr_streak = 0, curr_start = 0, curr_end = -1;
 		for (int i = 2; i <= 14; i++) {

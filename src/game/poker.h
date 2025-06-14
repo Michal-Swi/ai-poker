@@ -4,6 +4,7 @@
 #include <queue>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 #include "errors.h"
@@ -45,14 +46,93 @@ class Poker {
 	}
 
 	private:
-	std::vector<std::unique_ptr<Card>> table;
+	std::string get_color_string(const int &color) {
+		std::string color_string;
+
+		switch (color) {
+			case 0:
+				color_string = "Hearts";
+				break;
+			case 1:
+				color_string = "Diamond";
+				break;
+			case 2:
+				color_string = "Club";
+				break;
+			case 3:
+				color_string = "Spade";
+				break;
+		}
+
+		return color_string;
+	}
 
 	private:
+	std::string get_value_string(const int &value) {
+		std::string value_string;
+
+		switch (value) {
+			case 11:
+				value_string = "Jack";	
+				break;
+			case 12:
+				value_string = "Queen";
+				break;
+			case 13:
+				value_string = "King";
+				break;
+			case 14:
+				value_string = "Ace";
+				break;
+		}
+
+		return value_string;
+	}
+
+	private:
+	std::vector<std::unique_ptr<Card>> table;
+	const int number_of_players = 2;
+
+	/* 
+	 * 1. Blind bets
+	 * 2. Players get their cards
+	 * 3. Three top cards
+	 */
+
+	private:
+	int pot = 0;
+
+	public:
 	void first_round() {
 		table.clear();
+		shuffle_cards();
+		create_players(number_of_players);
+
+		std::cout << "Blind bets" << std::endl;
+		
+		for (int i = 0; i < players.size(); i++) {
+			players[i]->set_cash(10000);
+			pot += players[i]->get_blind_bet();
+		}
+
+		std::cout << pot << " is currently in the pot" << std::endl;
 
 		for (int i = 0; i < 3; i++) {
 			table.push_back(std::move(get_next_card()));
+		}
+
+		std::cout << "Initial table" << std::endl;
+		for (int i = 0; i < table.size(); i++) {
+			int value = table[i]->get_value(),
+				color = static_cast<int>(table[i]->get_color());
+
+			std::cout << get_color_string(color) << ' ';
+			if (value > 10) {
+				std::cout << get_value_string(value) << std::endl;
+				continue;
+			}	
+
+			std::cout << value << std::endl;
 		}
 	}
 
@@ -109,15 +189,10 @@ class Poker {
 		std::random_device random_device;
 		std::mt19937 engine(random_device());
 
-		std::shuffle(cards.begin(), cards.end(), engine);
-		std::cout << "Shuffled" << std::endl;
+		std::ranges::shuffle(cards, engine);
 
 		for (auto &card : cards) {
 			cards_queue.push(std::move(card));
-		}
-
-		if (!cards.empty()) {
-			throw std::runtime_error(ShufflingError);
 		}
 
 		cards.clear(); // Deletes nullptrs left
@@ -143,7 +218,6 @@ class Poker {
 
 	public:
 	void load() {	
-		shuffle_cards();
 	}
 };
 

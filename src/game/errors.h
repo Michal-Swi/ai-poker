@@ -11,4 +11,5 @@
 #define QueueClearError "Queue was not cleared correctly."
 #define NoCardsInQueue "Cards queue is empty."
 #define StreakEndOutOfBounds "Streak end is out of bounds."
+#define CardsWereNotAssigned "Cards were not assigned."
 

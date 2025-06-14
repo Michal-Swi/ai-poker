@@ -1,8 +1,16 @@
 #include <algorithm>
 #include <array>
+#include <cassert>
+#include <cctype>
+#include <charconv>
 #include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 #include <utility>
+#include <ranges>
 #include "cards.h"
+#include "errors.h"
 
 using unique_ptr_pair = std::pair<std::unique_ptr<Card>, std::unique_ptr<Card>>;
 
@@ -21,8 +29,7 @@ enum class HandEval {
 
 class Player {
 	private:
-	using color_arr_type = std::array<int, 4>;
-	using values_arr_type = std::array<int, 15>;
+	using poker_cards_arr = std::array<std::array<bool, 15>, 4>;
 	
 	private:
 	std::unique_ptr<Card> card1, card2;
@@ -47,40 +54,96 @@ class Player {
 	{} 
 
 	private:
-	bool royal_flush(values_arr_type &values_arr) {
+	bool card_value_exists(const int &value, const poker_cards_arr &poker_cards_arr) {
+		for (int i = 0; i < 4; i++) {
+			if (poker_cards_arr.at(i).at(value)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private:
+	bool straight_or_royal_flush(const int &dominant_colour, const poker_cards_arr &poker_cards_arr) {
 		if (streak < 5) {
 			return false;
 		}
 
-		if (start == 10 and end == 14) {
+		if (dominant_colour < 0) {
 			return false;
+		}
+
+		if (start == 0 or end == 0) {
+			return false;
+		}
+
+		// Should not be possible
+		if (end > 14) {
+			throw std::runtime_error(StreakEndOutOfBounds);
+		}
+		
+		for (int i = start; i <= end; i++) {
+			if (!poker_cards_arr.at(dominant_colour).at(i)) {
+				return false;
+			}
 		}
 
 		return true;
 	}
 
+	private:
+	// For evaluating weather we have one of the following; pair, ..., four of a kind 
+	int get_amount_of_same_values(const int &value, const poker_cards_arr &poker_cards_arr) {
+		int amount_of_same_values = 0;
+
+		for (int i = 0; i < 4; i++) {
+			if (poker_cards_arr.at(i).at(value)) {
+				amount_of_same_values++;
+			}
+		}
+
+		return amount_of_same_values;
+	}
+
+	private:
+	void check_max_streak 
+		(const int &curr_start, const int &curr_end, const int &curr_streak) {
+		if (streak > curr_streak) {
+			return;
+		}
+
+		end = curr_end;
+		start = curr_start;
+		streak = curr_streak;
+	}
+
 	public:
-	void evaluate_hand(color_arr_type color_arr, values_arr_type values_arr) {
-		values_arr.at(card1->get_value())++;	
-		values_arr.at(card2->get_value())++;	
+	void evaluate_hand(poker_cards_arr poker_cards_arr) {
+		// values_arr.at(card1->get_value())++;	
+		// values_arr.at(card2->get_value())++;	
 		
-		color_arr.at(static_cast<int>(card1->get_color()))++;
-		color_arr.at(static_cast<int>(card2->get_color()))++;
+		// color_arr.at(static_cast<int>(card1->get_color()))++;
+		// color_arr.at(static_cast<int>(card2->get_color()))++;
 		
 		int curr_streak = 0, curr_start = 0, curr_end = -1;
-		for (int i = 2; i < values_arr.size(); i++) {
-			if (curr_streak == 0 and values_arr[i] > 0) {
+		for (int i = 2; i <= 14; i++) {
+			bool exists_flag = card_value_exists(i, poker_cards_arr);
+
+			if (curr_streak == 0 and exists_flag) {
 				curr_start = i;
+				curr_streak = 0;	
 			}
 
-			if (values_arr[i] > 0) {
+			if (exists_flag) {
 				curr_streak++;
 				curr_end = i;
 			} else {
+				check_max_streak(curr_start, curr_end, curr_streak);
 				curr_streak = 0;
 			}
 
-			switch (values_arr[i]) {
+			switch (get_amount_of_same_values(i, poker_cards_arr)) {
 				case 2:
 					pairs++;
 					break;
@@ -93,8 +156,14 @@ class Player {
 			}
 		}
 
-		for (auto &colour : color_arr) {
-			if (colour >= 5) {
+		check_max_streak(curr_start, curr_end, curr_streak);
+
+		int dominant_colour = -1;
+		for (int i = 0; i < 4; i++) {
+			// Error here exists only if compiling with C++ pre 20 
+			// To avoid this error add -std=c++20 flag to your compiler
+			if (std::ranges::count(poker_cards_arr.at(i), true) >= 5) {
+				dominant_colour = i;
 				same_colour = true;
 				break;
 			}
@@ -102,7 +171,7 @@ class Player {
 
 		if (pairs == 1) {
 			hand_evaluation = HandEval::OnePair;
-		} else if (pairs == 2) {
+		} else if (pairs >= 2) {
 			hand_evaluation = HandEval::TwoPair;
 		}
 
@@ -118,22 +187,32 @@ class Player {
 			hand_evaluation = HandEval::Flush;
 		}
 
-		if (threes >= 1 and pairs >= 2) {
+		if (threes >= 1 and pairs >= 1) {
 			hand_evaluation = HandEval::FullHouse;
 		}
 
 		if (four) {
 			hand_evaluation = HandEval::FourOfAKind;
 		}
+		
+		const bool flush_flag = 
+			straight_or_royal_flush(dominant_colour, poker_cards_arr);
 
-		if (streak >= 5 and same_colour) {
+		if (streak >= 5 and flush_flag) {
 			hand_evaluation = HandEval::StraightFlush;
 		}
 
-		if (streak >= 5 and same_colour 
+		if (streak >= 5 and flush_flag 
 			and start == 10 and end == 14) {
 			hand_evaluation = HandEval::RoyalFlush;
 		}
+	}
+
+	std::string get_next_round_input() {
+		std::string next_round_input;
+		std::cin >> next_round_input;
+		
+		return next_round_input;
 	}
 
 	HandEval get_hand_evaluation() {

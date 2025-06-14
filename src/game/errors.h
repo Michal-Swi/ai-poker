@@ -10,4 +10,5 @@
 #define ShufflingError "Shuffling did not work correctly."
 #define QueueClearError "Queue was not cleared correctly."
 #define NoCardsInQueue "Cards queue is empty."
+#define StreakEndOutOfBounds "Streak end is out of bounds."
 

@@ -9,6 +9,10 @@
 #include "errors.h"
 #include "./player.h"
 
+enum class Moves {
+	Call, Raise, Check
+};
+
 class Poker {
 	private:
 	std::vector<std::unique_ptr<Card>> cards;
@@ -72,21 +76,20 @@ class Poker {
 	}
 
 	private:
-	std::array<int, 4> colors_array;
-	std::array<int, 15> values_array;
+	std::array<std::array<bool, 15>, 4> poker_values_arr;
 
 	private:
 	void evaluate_table() {
-		colors_array.fill(0);
-		values_array.fill(0);
+		for (int i = 0; i < 4; i++) {
+			poker_values_arr.at(i).fill(false);
+		}
 
 		for (auto &table_card : table) {
 			int color_num = static_cast<int>
 				(table_card->get_color());
 			int value = table_card->get_value();
 
-			colors_array.at(color_num)++;
-			values_array.at(value)++;
+			poker_values_arr.at(color_num).at(value) = true;
 		}
 	}
 
@@ -95,7 +98,7 @@ class Poker {
 		evaluate_table();
 
 		for (auto &player : players) {
-			player->evaluate_hand(colors_array, values_array);
+			player->evaluate_hand(poker_values_arr);
 			HandEval hand = player->get_hand_evaluation();
 			player_hand_evaluation.push_back(hand);
 		}
